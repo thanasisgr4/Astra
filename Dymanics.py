@@ -6,84 +6,83 @@ import plotly.express as px
 import math
 
 # ==========================================
-# 1. CORE CONFIGURATION & CUSTOM CSS (Enterprise UI)
+# 1. ENTERPRISE CONFIGURATION & MINIMALIST CSS (SpaceX / Palantir Style)
 # ==========================================
-st.set_page_config(page_title="Astraia OS | Enterprise Engine", layout="wide", page_icon="🌌")
+st.set_page_config(page_title="Astraia Dynamics | OS", layout="wide")
 
 st.markdown("""
     <style>
-        /* Space-Tech UI Theme */
-        .block-container { padding-top: 2rem; padding-bottom: 2rem; }
-        h1, h2, h3 { color: #F8FAFC !important; font-family: 'Inter', sans-serif; }
-        .stMetric { 
-            background-color: #0F172A; 
-            padding: 20px; 
-            border-radius: 12px; 
-            border-left: 5px solid #3B82F6;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        /* Base Enterprise Theme */
+        .stApp { background-color: #050505; color: #E0E0E0; }
+        .stSidebar { background-color: #0A0A0A; border-right: 1px solid #1F1F1F; }
+        
+        /* Clean Typography */
+        h1 { color: #FFFFFF !important; font-weight: 300 !important; letter-spacing: 2px; font-size: 2.5rem !important; }
+        h2, h3 { color: #FFFFFF !important; font-weight: 400 !important; letter-spacing: 1px;}
+        p, span, label { color: #8B949E !important; }
+        
+        /* Minimalist Metric Cards */
+        div[data-testid="stMetric"] {
+            background-color: #0A0A0A;
+            border: 1px solid #1F1F1F;
+            padding: 20px;
+            border-radius: 4px;
+            border-top: 2px solid #0052FF;
         }
-        .stMetric label { color: #94A3B8 !important; font-size: 1.1rem; }
-        .stMetric div { color: #E2E8F0 !important; }
-        hr { border-color: #334155; }
+        div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-size: 2rem !important; font-weight: 300 !important; }
+        div[data-testid="stMetricDelta"] { color: #8B949E !important; font-weight: 400 !important; }
+        
+        /* Professional Tabs */
+        .stTabs [data-baseweb="tab-list"] { gap: 30px; border-bottom: 1px solid #1F1F1F; }
+        .stTabs [data-baseweb="tab"] { background-color: transparent; border: none; padding-bottom: 10px; color: #8B949E; font-weight: 500; }
+        .stTabs [aria-selected="true"] { color: #FFFFFF !important; border-bottom: 2px solid #0052FF !important; }
+        
+        hr { border-color: #1F1F1F; }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Astraia OS : Mission Control & Logistics Engine")
-st.markdown("*Advanced Orbital Routing, Cryogenic Physics & Stochastic Financial Modeling*")
-st.divider()
+st.title("ASTRAIA DYNAMICS")
+st.markdown("<span style='color:#8B949E; font-size:1.1rem; letter-spacing: 1px;'>ORBITAL LOGISTICS & ROUTING ENGINE (v4.5)</span>", unsafe_allow_html=True)
+st.markdown("---")
 
 # ==========================================
-# 2. SIDEBAR: MISSION PARAMETERS (Input Engine)
+# 2. SIDEBAR: OPERATIONAL PARAMETERS
 # ==========================================
 with st.sidebar:
-    st.header("⚙️ Παράμετροι Αποστολής")
+    st.markdown("<h3 style='color:#FFFFFF;'>SYSTEM PARAMETERS</h3>", unsafe_allow_html=True)
     
-    st.subheader("1. Ζήτηση & Αγορά")
-    annual_tons = st.slider("Ετήσιο Φορτίο (Τόνοι)", 10, 500, 100, 10)
-    target_discount = st.slider("Έκπτωση Πελάτη (%)", 5.0, 40.0, 20.0, 1.0)
-    base_launch_cost = st.number_input("Βασικό Κόστος LEO ($/kg)", value=5000, step=500)
+    st.markdown("#### Market Demand")
+    annual_tons = st.number_input("Annual Payload (Tons)", min_value=10, max_value=500, value=100, step=10)
+    target_discount = st.slider("Client SaaS Discount (%)", 5.0, 40.0, 20.0, 1.0)
+    base_launch_cost = st.number_input("LEO Launch Cost ($/kg)", value=5000, step=500)
     
-    st.subheader("2. Φυσική & Κρυογονική")
-    isp = st.slider("Ειδική Ώση (Isp - sec)", 300, 500, 450, 10, help="LOX/LH2 Κινητήρες")
-    boil_off_rate = st.slider("Ρυθμός Εξάτμισης (% / ημέρα)", 0.0, 5.0, 0.5, 0.1)
-    wait_days = st.slider("Ημέρες Αναμονής στο L1", 0, 30, 5)
+    st.markdown("#### Cryogenic Variables")
+    isp = st.slider("Engine Isp (sec)", 300, 500, 450, 10)
+    boil_off_rate = st.slider("Boil-Off Rate (%/day)", 0.0, 5.0, 0.5, 0.1)
+    wait_days = st.slider("L1 Hub Wait Time (Days)", 0, 30, 5)
     
-    st.subheader("3. Υποδομές & Ρίσκο")
-    module_capacity = st.number_input("Max Χωρητικότητα Module (t)", value=50)
-    insurance_rate = st.slider("Ασφάλιστρο & Contingency (%)", 0, 30, 15, 5)
+    st.markdown("#### Financial & Risk Limits")
+    module_capacity = st.number_input("Hub Module Capacity (Tons)", value=50)
+    insurance_rate = st.slider("Risk Contingency Reserve (%)", 0, 30, 15, 5)
 
 # ==========================================
-# 3. MATHEMATICAL & PHYSICS MODELS
+# 3. MATHEMATICAL CORE
 # ==========================================
-# Σταθερές
-g0 = 9.81
-dry_ratio = 0.10
-dv_direct = 5900
-dv_stage1 = 3800
+g0, dry_ratio, dv_direct, dv_stage1 = 9.81, 0.10, 5900, 3800
 
-# Εξίσωση Tsiolkovsky
-def get_mass_ratio(dv, specific_impulse):
-    return math.exp(dv / (specific_impulse * g0))
+def get_mass_ratio(dv, specific_impulse): return math.exp(dv / (specific_impulse * g0))
 
-# Βασικοί Υπολογισμοί Μάζας
 payload_kg = annual_tons * 1000
 m0_direct = payload_kg * (1 + (get_mass_ratio(dv_direct, isp) - 1) * (1 + dry_ratio))
 
-# Υπολογισμός με Boil-off penalty
 propellant_needed_relay = payload_kg * (get_mass_ratio(dv_stage1, isp) - 1)
 boil_off_penalty = propellant_needed_relay * ((1 - (boil_off_rate/100))**wait_days)
 propellant_launch_relay = propellant_needed_relay + (propellant_needed_relay - boil_off_penalty)
 m0_relay = payload_kg + propellant_launch_relay * (1 + dry_ratio)
 
 mass_savings_pct = (1 - (m0_relay / m0_direct)) * 100
-
-# ==========================================
-# 4. FINANCIAL & SCALING MODELS
-# ==========================================
 required_modules = math.ceil(annual_tons / module_capacity)
-capex_per_module = 250_000_000
-total_capex = (required_modules * capex_per_module) + 15_000_000 # +15M IP & Certification
-
+total_capex = (required_modules * 250_000_000) + 15_000_000 
 total_opex = (required_modules * 20_000_000) + (annual_tons * 150_000)
 
 direct_market_cost = m0_direct * base_launch_cost
@@ -98,68 +97,72 @@ margin = (net_profit / astraia_revenue) * 100 if astraia_revenue > 0 else 0
 payback = total_capex / net_profit if net_profit > 0 else 0
 
 # ==========================================
-# 5. UI TABS & VISUALIZATIONS (The Dashboard)
+# 4. EXECUTIVE DASHBOARD & TABS
 # ==========================================
-tab1, tab2, tab3 = st.tabs(["📈 Executive Dashboard", "🪐 Orbital Physics & Mass", "🎲 Monte Carlo Risk Analysis"])
+tab1, tab2, tab3 = st.tabs(["EXECUTIVE SUMMARY", "ORBITAL PHYSICS", "MONTE CARLO SIMULATION"])
 
 with tab1:
-    st.subheader("Βασικοί Δείκτες Απόδοσης (Risk-Adjusted KPIs)")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Εξοικονόμηση Μάζας", f"{mass_savings_pct:.1f}%", f"Έναντι {m0_direct/1000:.0f}t (Direct)")
-    c2.metric("Καθαρό Κέρδος (Astraia)", f"${net_profit/1e6:.1f}M", f"Περιθώριο {margin:.1f}%")
-    c3.metric("Συνολικό CapEx", f"${total_capex/1e6:.1f}M", f"{required_modules} L1 Modules")
-    c4.metric("ROI (Απόσβεση)", f"{payback:.1f} έτη" if payback > 0 else "N/A", "Μετά την ασφάλιση")
+    c1.metric("MASS EFFICIENCY", f"{mass_savings_pct:.1f}%", f"vs Direct Launch")
+    c2.metric("NET PROFIT", f"${net_profit/1e6:.1f}M", f"Margin: {margin:.1f}%")
+    c3.metric("CAPEX BURN", f"${total_capex/1e6:.1f}M", f"Modules: {required_modules}")
+    c4.metric("ROI PROJECTION", f"{payback:.1f} YRS" if payback > 0 else "N/A", "Risk-Adjusted")
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Πρωτοποριακό γράφημα Waterfall για τα οικονομικά
+    # Minimalist Waterfall Chart
     fig_waterfall = go.Figure(go.Waterfall(
-        name="20", orientation="v",
-        measure=["relative", "relative", "relative", "relative", "total"],
-        x=["Έσοδα (Πελάτης)", "Κόστος Εκτόξευσης (Astraia)", "OpEx (Λειτουργικά)", "Risk Reserve (Ασφάλεια)", "Καθαρό Κέρδος"],
-        textposition="outside",
+        orientation="v", measure=["relative", "relative", "relative", "relative", "total"],
+        x=["Revenue (Client)", "Launch Cost", "OpEx", "Risk Reserve", "Net Profit"],
         y=[astraia_revenue/1e6, -astraia_launch_cost/1e6, -total_opex/1e6, -risk_reserve/1e6, net_profit/1e6],
-        connector={"line":{"color":"#475569"}},
-        decreasing={"marker":{"color":"#EF4444"}},
-        increasing={"marker":{"color":"#10B981"}},
-        totals={"marker":{"color":"#3B82F6"}}
+        text=[f"${astraia_revenue/1e6:.0f}M", f"-${astraia_launch_cost/1e6:.0f}M", f"-${total_opex/1e6:.0f}M", f"-${risk_reserve/1e6:.0f}M", f"${net_profit/1e6:.0f}M"],
+        textposition="outside",
+        connector={"line":{"color":"#1F1F1F", "width": 2}},
+        decreasing={"marker":{"color":"#333333"}}, 
+        increasing={"marker":{"color":"#E0E0E0"}}, 
+        totals={"marker":{"color":"#0052FF"}}      
     ))
-    fig_waterfall.update_layout(title="Ροή Κερδοφορίας ($ Εκατομμύρια)", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#F8FAFC"))
+    fig_waterfall.update_layout(
+        title="<b>FINANCIAL FLOW (USD Millions)</b>",
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#8B949E", size=13),
+        xaxis=dict(showgrid=False), yaxis=dict(gridcolor="#1F1F1F", zerolinecolor="#333333")
+    )
     st.plotly_chart(fig_waterfall, use_container_width=True)
 
 with tab2:
-    st.subheader("Δυναμική Μάζας & Φαινόμενο Boil-Off")
     colA, colB = st.columns(2)
-    
     with colA:
-        st.write("Ανάλυση Εξάτμισης Κρυογονικών:")
-        st.info(f"Για παραμονή **{wait_days} ημερών** στο L1 με ρυθμό εξάτμισης **{boil_off_rate}%/ημέρα**, το σύστημα αντισταθμίζει απώλεια **{boil_off_penalty/1000:.1f} τόνων** καυσίμου προσθέτοντάς τα στην αρχική εκτόξευση.")
-        st.write(f"- Απαιτούμενη Μάζα Γήινης Εκτόξευσης (Direct): **{m0_direct/1000:.1f} t**")
-        st.write(f"- Απαιτούμενη Μάζα Γήινης Εκτόξευσης (Astraia L1): **{m0_relay/1000:.1f} t**")
+        st.markdown("### Mass Penalty & Boil-Off Analysis")
+        st.markdown(f"<span style='color:#0052FF; font-weight:bold;'>Hub Wait Time:</span> {wait_days} days <br> <span style='color:#0052FF; font-weight:bold;'>Evaporation Loss:</span> {boil_off_penalty/1000:.1f} tons", unsafe_allow_html=True)
+        st.write("")
+        st.write(f"- Direct Launch Mass Requirement: **{m0_direct/1000:.1f} t**")
+        st.write(f"- Astraia Relay Mass Requirement: **{m0_relay/1000:.1f} t**")
         
     with colB:
-        # Διάγραμμα Σύγκρισης Μάζας
         df_mass = pd.DataFrame({
-            "Στάδιο": ["Payload", "Δομή (Dry Mass)", "Καύσιμα (Propellant)", "Boil-off Αναπλήρωση"],
-            "Direct (t)": [payload_kg/1000, (m0_direct-payload_kg)*dry_ratio/1000, (m0_direct-payload_kg)*(1-dry_ratio)/1000, 0],
-            "Astraia L1 (t)": [payload_kg/1000, (m0_relay-payload_kg-boil_off_penalty)*dry_ratio/1000, (m0_relay-payload_kg-boil_off_penalty)*(1-dry_ratio)/1000, boil_off_penalty/1000]
+            "Stage": ["Payload", "Dry Mass", "Propellant", "Boil-off Refill"],
+            "Direct": [payload_kg/1000, (m0_direct-payload_kg)*dry_ratio/1000, (m0_direct-payload_kg)*(1-dry_ratio)/1000, 0],
+            "Astraia L1": [payload_kg/1000, (m0_relay-payload_kg-boil_off_penalty)*dry_ratio/1000, (m0_relay-payload_kg-boil_off_penalty)*(1-dry_ratio)/1000, boil_off_penalty/1000]
         })
-        fig_mass = px.bar(df_mass, x="Στάδιο", y=["Direct (t)", "Astraia L1 (t)"], barmode="group", color_discrete_sequence=["#EF4444", "#3B82F6"])
-        fig_mass.update_layout(title="Σύγκριση Απαιτούμενης Μάζας Ανά Κατηγορία", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#F8FAFC"))
+        fig_mass = px.bar(df_mass, x="Stage", y=["Direct", "Astraia L1"], barmode="group", color_discrete_sequence=["#333333", "#0052FF"])
+        fig_mass.update_layout(
+            title="<b>MASS ALLOCATION BREAKDOWN (Tons)</b>", template="plotly_dark",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#8B949E")
+        )
         st.plotly_chart(fig_mass, use_container_width=True)
 
 with tab3:
-    st.subheader("Στοχαστική Προσομοίωση Μόντε Κάρλο (1.000 Σενάρια)")
-    st.write("Στην πραγματική διαστημική αγορά, το κόστος εκτόξευσης και το λειτουργικό κόστος υπόκεινται σε διακυμάνσεις. Ο αλγόριθμος τρέχει 1.000 εναλλακτικά σύμπαντα (scenarios) για να δοκιμάσει την αντοχή της εταιρείας.")
+    st.markdown("### Stochastic Risk Simulator")
+    st.write("Executing 10,000 parallel iterations to model launch cost volatility (±15%) and OpEx scaling (±20%).")
     
-    if st.button("▶️ Εκτέλεση Προσομοίωσης Monte Carlo"):
-        with st.spinner("Υπολογισμός 1.000 σεναρίων..."):
-            # Προσομοίωση 1000 σεναρίων
-            sim_launch_costs = np.random.normal(base_launch_cost, base_launch_cost*0.15, 1000) # Διακύμανση 15%
-            sim_opex_multiplier = np.random.normal(1.0, 0.20, 1000) # Διακύμανση OpEx 20%
+    if st.button("RUN SIMULATION"):
+        with st.spinner("Processing Data..."):
+            sim_launch_costs = np.random.normal(base_launch_cost, base_launch_cost*0.15, 10000)
+            sim_opex_multiplier = np.random.normal(1.0, 0.20, 10000)
             
             sim_profits = []
-            for i in range(1000):
+            for i in range(10000):
                 s_direct_cost = m0_direct * sim_launch_costs[i]
                 s_revenue = s_direct_cost * (1 - (target_discount / 100.0))
                 s_astraia_cost = m0_relay * sim_launch_costs[i]
@@ -170,16 +173,15 @@ with tab3:
             success_rate = (sim_profits > 0).mean() * 100
             
             c_res1, c_res2, c_res3 = st.columns(3)
-            c_res1.metric("Πιθανότητα Επιβίωσης (Κέρδος > 0)", f"{success_rate:.1f}%")
-            c_res2.metric("Μέσο (Αναμενόμενο) Κέρδος", f"${sim_profits.mean():.1f}M")
-            c_res3.metric("Χειρότερο Σενάριο (Max Ζημιά)", f"${sim_profits.min():.1f}M")
+            c_res1.metric("SYSTEM SURVIVABILITY", f"{success_rate:.1f}%")
+            c_res2.metric("MEAN EXPECTED PROFIT", f"${sim_profits.mean():.1f}M")
+            c_res3.metric("MAXIMUM DOWNSIDE", f"${sim_profits.min():.1f}M")
             
-            fig_hist = px.histogram(sim_profits, nbins=50, title="Κατανομή Πιθανού Κέρδους (Σε $ Εκατομμύρια)", color_discrete_sequence=["#10B981"])
-            fig_hist.add_vline(x=0, line_dash="dash", line_color="red", annotation_text="Νεκρό Σημείο")
-            fig_hist.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#F8FAFC"))
+            fig_hist = px.histogram(sim_profits, nbins=60, color_discrete_sequence=["#0052FF"])
+            fig_hist.add_vline(x=0, line_dash="dash", line_color="#FFFFFF")
+            fig_hist.update_layout(
+                title="<b>PROFIT PROBABILITY DISTRIBUTION</b>", template="plotly_dark",
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#8B949E"),
+                showlegend=False
+            )
             st.plotly_chart(fig_hist, use_container_width=True)
-            
-            if success_rate > 85:
-                st.success("✅ Εξαιρετικά ανθεκτικό μοντέλο. Η εταιρεία επιβιώνει σχεδόν σε όλες τις αναταράξεις της αγοράς.")
-            else:
-                st.warning("⚠️ Υψηλό ρίσκο. Συνιστάται η μείωση της έκπτωσης στον πελάτη ή η αύξηση της χωρητικότητας του σταθμού.")
