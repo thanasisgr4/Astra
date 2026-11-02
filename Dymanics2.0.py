@@ -366,4 +366,4 @@ class AstraiaRoutingEngine:
                 "astraia_client_invoice": round(astraia_client_price, 2),
                 "astraia_operational_cost": round(astraia_actual_cost, 2),
                 "gross_profit_per_mission": round(gross_profit, 2)
-
+}
