@@ -52,7 +52,7 @@ with st.sidebar:
     elif scenario == "Baseline (Εμπορική Ανάπτυξη)":
         def_tons, def_cost, def_disc, def_wait, def_risk = 100, 5000, 20.0, 5, 15
     elif scenario == "Aggressive (Εποχή Artemis)":
-        def_tons, def_cost, def_disc, def_wait, def_risk = 350, 2000, 25.0, 2, 10
+        def_tons, def_cost, def_disc, def_wait, def_risk = 350, 5000, 25.0, 2, 10
     else:
         def_tons, def_cost, def_disc, def_wait, def_risk = 100, 5000, 20.0, 5, 15
 
