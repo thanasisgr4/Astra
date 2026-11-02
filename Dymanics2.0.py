@@ -367,23 +367,3 @@ class AstraiaRoutingEngine:
                 "astraia_operational_cost": round(astraia_actual_cost, 2),
                 "gross_profit_per_mission": round(gross_profit, 2)
 
-# ==========================================
-# 4. ΕΚΤΕΛΕΣΗ (Mock API Call)
-# ==========================================
-if __name__ == "__main__":
-    # 1. Ορίζουμε το διαστημόπλοιο (π.χ. Φορτίο 100 τόνων)
-    spacecraft = SpacecraftSpecs(payload_kg=100_000, isp_seconds=450)
-    
-    # 2. Ορίζουμε την αγορά (π.χ. $5,000/kg LEO, 20% έκπτωση στον πελάτη)
-    market_env = MarketConditions(base_launch_cost_per_kg=5000, saas_discount_margin=0.20)
-    
-    # 3. Αρχικοποιούμε τη μηχανή
-    engine = AstraiaRoutingEngine(specs=spacecraft, market=market_env)
-    
-    # 4. Εξάγουμε το μανιφέστο (Αποτέλεσμα Δρομολόγησης)
-    try:
-        report = engine.generate_mission_manifest()
-        import json
-        print(json.dumps(report, indent=4, ensure_ascii=False))
-    except (OrbitalPhysicsError, EconomicViabilityError) as e:
-        print(f"Σφάλμα Αποστολής: {e}")
