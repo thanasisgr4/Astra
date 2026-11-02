@@ -6,22 +6,17 @@ import plotly.express as px
 import math
 
 # ==========================================
-# 1. ENTERPRISE CONFIGURATION & MINIMALIST CSS (SpaceX / Palantir Style)
+# 1. ENTERPRISE CONFIGURATION & MINIMALIST CSS
 # ==========================================
 st.set_page_config(page_title="Astraia Dynamics | OS", layout="wide")
 
 st.markdown("""
     <style>
-        /* Base Enterprise Theme */
         .stApp { background-color: #050505; color: #E0E0E0; }
         .stSidebar { background-color: #0A0A0A; border-right: 1px solid #1F1F1F; }
-        
-        /* Clean Typography */
         h1 { color: #FFFFFF !important; font-weight: 300 !important; letter-spacing: 2px; font-size: 2.5rem !important; }
         h2, h3 { color: #FFFFFF !important; font-weight: 400 !important; letter-spacing: 1px;}
         p, span, label { color: #8B949E !important; }
-        
-        /* Minimalist Metric Cards */
         div[data-testid="stMetric"] {
             background-color: #0A0A0A;
             border: 1px solid #1F1F1F;
@@ -31,39 +26,54 @@ st.markdown("""
         }
         div[data-testid="stMetricValue"] { color: #FFFFFF !important; font-size: 2rem !important; font-weight: 300 !important; }
         div[data-testid="stMetricDelta"] { color: #8B949E !important; font-weight: 400 !important; }
-        
-        /* Professional Tabs */
         .stTabs [data-baseweb="tab-list"] { gap: 30px; border-bottom: 1px solid #1F1F1F; }
         .stTabs [data-baseweb="tab"] { background-color: transparent; border: none; padding-bottom: 10px; color: #8B949E; font-weight: 500; }
         .stTabs [aria-selected="true"] { color: #FFFFFF !important; border-bottom: 2px solid #0052FF !important; }
-        
         hr { border-color: #1F1F1F; }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("ASTRAIA DYNAMICS")
-st.markdown("<span style='color:#8B949E; font-size:1.1rem; letter-spacing: 1px;'>ORBITAL LOGISTICS & ROUTING ENGINE (v4.5)</span>", unsafe_allow_html=True)
+st.markdown("<span style='color:#8B949E; font-size:1.1rem; letter-spacing: 1px;'>ORBITAL LOGISTICS & ROUTING ENGINE (v5.0 - Enterprise Presets)</span>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ==========================================
-# 2. SIDEBAR: OPERATIONAL PARAMETERS
+# 2. SIDEBAR: SCENARIO PRESETS & PARAMETERS
 # ==========================================
 with st.sidebar:
-    st.markdown("<h3 style='color:#FFFFFF;'>SYSTEM PARAMETERS</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#FFFFFF;'>SCENARIO PRESETS</h3>", unsafe_allow_html=True)
     
-    st.markdown("#### Market Demand")
-    annual_tons = st.number_input("Annual Payload (Tons)", min_value=10, max_value=500, value=100, step=10)
-    target_discount = st.slider("Client SaaS Discount (%)", 5.0, 40.0, 20.0, 1.0)
-    base_launch_cost = st.number_input("LEO Launch Cost ($/kg)", value=5000, step=500)
+    # Επιλογή Έτοιμου Σεναρίου
+    scenario = st.selectbox(
+        "Επιλέξτε Έτοιμο Σενάριο Αγοράς",
+        ["Custom (Προσαρμοσμένο)", "Conservative (Συντηρητικό Start)", "Baseline (Εμπορική Ανάπτυξη)", "Aggressive (Εποχή Artemis)"]
+    )
+    
+    # Αυτόματη ρύθμιση τιμών ανάλογα με το σενάριο
+    if scenario == "Conservative (Συντηρητικό Start)":
+        default_tons, default_cost, default_discount, default_wait, default_risk = 20, 7000, 15.0, 10, 20
+    elif scenario == "Baseline (Εμπορική Ανάπτυξη)":
+        default_tons, default_cost, default_discount, default_wait, default_risk = 100, 5000, 20.0, 5, 15
+    elif scenario == "Aggressive (Εποχή Artemis)":
+        default_tons, default_cost, default_discount, default_wait, default_risk = 350, 2000, 25.0, 2, 10
+    else:
+        default_tons, default_cost, default_discount, default_wait, default_risk = 100, 5000, 20.0, 5, 15
+
+    st.markdown("---")
+    st.markdown("<h3 style='color:#FFFFFF;'>OPERATIONAL CONTROLS</h3>", unsafe_allow_html=True)
+    
+    annual_tons = st.number_input("Annual Payload (Tons)", min_value=5, max_value=1000, value=default_tons, step=10)
+    target_discount = st.slider("Client SaaS Discount (%)", 5.0, 40.0, default_discount, 1.0)
+    base_launch_cost = st.number_input("LEO Launch Cost ($/kg)", value=default_cost, step=500)
     
     st.markdown("#### Cryogenic Variables")
     isp = st.slider("Engine Isp (sec)", 300, 500, 450, 10)
     boil_off_rate = st.slider("Boil-Off Rate (%/day)", 0.0, 5.0, 0.5, 0.1)
-    wait_days = st.slider("L1 Hub Wait Time (Days)", 0, 30, 5)
+    wait_days = st.slider("L1 Hub Wait Time (Days)", 0, 30, default_wait)
     
     st.markdown("#### Financial & Risk Limits")
     module_capacity = st.number_input("Hub Module Capacity (Tons)", value=50)
-    insurance_rate = st.slider("Risk Contingency Reserve (%)", 0, 30, 15, 5)
+    insurance_rate = st.slider("Risk Contingency Reserve (%)", 0, 30, default_risk, 5)
 
 # ==========================================
 # 3. MATHEMATICAL CORE
@@ -110,7 +120,6 @@ with tab1:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Minimalist Waterfall Chart
     fig_waterfall = go.Figure(go.Waterfall(
         orientation="v", measure=["relative", "relative", "relative", "relative", "total"],
         x=["Revenue (Client)", "Launch Cost", "OpEx", "Risk Reserve", "Net Profit"],
