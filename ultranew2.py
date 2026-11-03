@@ -1552,9 +1552,7 @@ with optimizer_tab:
             st.error(str(exc))
 
     stored_optimization = (
-        st.session_state.get(
-            "astraia_optimization"
-        )
+        st.session_state.get
     )
 
     if (
