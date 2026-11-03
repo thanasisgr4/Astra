@@ -2632,4 +2632,3 @@ with audit_tab:
         "secure persistence, access controls, monitoring, "
         "and a deployment security review."
     )
-```
