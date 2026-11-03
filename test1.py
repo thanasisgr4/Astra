@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as stβ
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -29,55 +29,6 @@ class AstraiaMonteCarloEngine:
         self.iterations = iterations
         self.g0 = 9.80665  # Σταθερά βαρύτητας (m/s^2)
 
-    def simulate_architectures(self, sc: SpacecraftSpecs, market: MarketConditions) -> Dict:
-        np.random.seed(42)  # Σταθερότητα για επαναληψιμότητα παρουσίασης
-        
-        # 1. Στοχαστικές Κατανομές (Uncertainty Distribution)
-        dv_direct = np.random.normal(3800, 150, self.iterations)
-        dv_l1 = np.random.normal(3100, 100, self.iterations)
-        wait_days_l1 = np.random.triangular(5, 15, 30, self.iterations)
-        fuel_price = np.random.uniform(market.base_fuel_cost_kg * 0.9, market.base_fuel_cost_kg * 1.4, self.iterations)
-        boil_off_rate = np.random.normal(sc.base_boil_off_rate, 0.0002, self.iterations)
-        boil_off_rate = np.clip(boil_off_rate, 0.0001, 0.005)
-
-        # 2. Φυσική Tsiolkovsky (Rocket Equation)
-        mass_ratio_direct = np.exp(dv_direct / (sc.isp_s * self.g0))
-        fuel_direct = sc.dry_mass_kg * (mass_ratio_direct - 1)
-        cost_direct = fuel_direct * fuel_price
-
-        mass_ratio_l1 = np.exp(dv_l1 / (sc.isp_s * self.g0))
-        fuel_l1_base = sc.dry_mass_kg * (mass_ratio_l1 - 1)
-        
-        # 3. Μοντελοποίηση Trade-offs (Boil-off vs SLA Delay Penalties)
-        boil_off_loss = fuel_l1_base * (1 - (1 - boil_off_rate)**wait_days_l1)
-        total_fuel_l1 = fuel_l1_base + boil_off_loss
-        cost_l1 = (total_fuel_l1 * fuel_price) + (wait_days_l1 * market.delay_penalty_per_day)
-
-        # 4. Στατιστική Ανάλυση & Metrics
-        savings = cost_direct - cost_l1
-        prob_l1_better = (np.sum(savings > 0) / self.iterations) * 100
-
-        results_df = pd.DataFrame({
-            "Direct_Cost_M": cost_direct / 1e6,
-            "L1_Cost_M": cost_l1 / 1e6,
-            "Savings_M": savings / 1e6,
-            "L1_Wait_Days": wait_days_l1,
-            "Fuel_Saved_Tons": (fuel_direct - total_fuel_l1) / 1000.0
-        })
-
-        return {
-            "L1_Success_Probability": round(prob_l1_better, 1),
-            "Mean_Savings_Millions": round(np.mean(savings) / 1e6, 2),
-            "P90_Savings_Millions": round(np.percentile(savings, 10) / 1e6, 2), # 90% Βεβαιότητα
-            "Max_Risk_Loss_Millions": round(np.min(savings) / 1e6, 2), # Worst Case
-            "Avg_Fuel_Saved_Tons": round(np.mean(fuel_direct - total_fuel_l1) / 1000.0, 1),
-            "Data": results_df
-        }
-
-# ==============================================================================
-# 2. PLOTLY 3D VISUALIZER & GRAPH GENERATORS
-# ==============================================================================
-
 def build_3d_orbital_map():
     """Δημιουργεί διαδραστικό 3D χάρτη του τροχιακού δικτύου Earth-L1-Moon."""
     fig = go.Figure()
@@ -89,11 +40,11 @@ def build_3d_orbital_map():
     z_earth = 3 * np.cos(v)
     fig.add_trace(go.Surface(x=x_earth, y=y_earth, z=z_earth, colorscale='Blues', showscale=False, name="Earth"))
 
-    # 2. Σελήνη (Moon Sphere)
+    # 2. Σελήνη (Moon Sphere) - ΔΙΟΡΘΩΘΗΚΕ ΤΟ 'Greys'
     x_moon = 35 + 1.2 * np.cos(u) * np.sin(v)
     y_moon = 0 + 1.2 * np.sin(u) * np.sin(v)
     z_moon = 1.2 * np.cos(v)
-    fig.add_trace(go.Surface(x=x_moon, y=y_moon, z=z_moon, colorscale='Grays', showscale=False, name="Moon"))
+    fig.add_trace(go.Surface(x=x_moon, y=y_moon, z=z_moon, colorscale='Greys', showscale=False, name="Moon"))
 
     # 3. Κόμβος L1 Lagrange Node
     fig.add_trace(go.Scatter3d(
