@@ -1,0 +1,138 @@
+{
+  "schema": "astraia.campaign.v1",
+  "scenario": {
+    "name": "ANALYTIC FIXTURE zero loss and uncertainty",
+    "endpoint": "User-defined depot handover; NOT Gateway or a Starship model",
+    "commodity": "One aggregate compatible commodity",
+    "horizon_days": 25,
+    "capacity_kg": 10000,
+    "initial_kg": 0,
+    "storage_loss_fraction_per_day": 0,
+    "transit_loss_fraction_per_day": 0,
+    "transfer_efficiency": 1,
+    "lead_days": 1,
+    "unloading_kg_per_day": 6000,
+    "max_load_kg": 6000,
+    "min_dispatch_gap_days": 2,
+    "independent_delay_probability": 0,
+    "independent_delay_max_days": 0,
+    "common_delay_probability": 0,
+    "common_delay_max_days": 0,
+    "delivery_service_cost_per_dispatch": 2000000,
+    "commodity_cost_per_kg_loaded": 50,
+    "campaign_fixed_cost": 500000,
+    "cost_relative_half_range": 0,
+    "demands": [
+      {
+        "id": "D1",
+        "ready_day": 10,
+        "deadline_day": 10,
+        "kg": 4000
+      },
+      {
+        "id": "D2",
+        "ready_day": 20,
+        "deadline_day": 20,
+        "kg": 4000
+      }
+    ]
+  },
+  "provenance": {
+    "name": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "endpoint": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "commodity": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "horizon_days": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "capacity_kg": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "initial_kg": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "storage_loss_fraction_per_day": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "transit_loss_fraction_per_day": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "transfer_efficiency": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "lead_days": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "unloading_kg_per_day": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "max_load_kg": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "min_dispatch_gap_days": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "independent_delay_probability": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "independent_delay_max_days": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "common_delay_probability": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "common_delay_max_days": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "delivery_service_cost_per_dispatch": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "commodity_cost_per_kg_loaded": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "campaign_fixed_cost": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "cost_relative_half_range": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    },
+    "demands": {
+      "status": "synthetic",
+      "basis": "Deliberate mathematical test fixture; not measured flight data, hardware specification or commercial quote."
+    }
+  },
+  "limitations": [
+    "All numbers and uncertainty distributions are synthetic and uncalibrated.",
+    "Single depot, one unloading server, single aggregate propellant commodity.",
+    "No trajectory solver, cryogenic thermal model, mixture ratio or hardware reliability model.",
+    "External lead times and delivery-service costs; existing infrastructure and initial stock acquisition outside cost boundary.",
+    "Fixed open-loop departures; instantaneous all-or-nothing consumer handover; no downstream transport.",
+    "Modeled service frequency is NOT cargo-loss risk, mission reliability or ESA certification."
+  ]
+}
