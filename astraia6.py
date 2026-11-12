@@ -19,6 +19,8 @@ VERSION = 'Astraia 6.0 — Orbital Propellant Service-Level Engine'
 MODEL_ID = 'astraia-service-network-6.0'
 G0 = 9.80665
 ARCHS = ('MTO', 'MTS', 'MTS_MTO')
+GRID_M = (.5, 1., 1.5, 2., 3., 4., 6., 8.)
+GRID_R = (7., 14., 30., 60., 90.)
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,7 @@ class NetScenario:
     transfer_efficiency: float = 0.99
     # risk
     launch_reliability: float = 0.98
+    storage_availability: float = 1.0       # probability the orbital storage service exists and works (infrastructure risk)
     delay_probability: float = 0.15
     max_extra_delay_days: float = 5.0
     loss_cv: float = 0.25
@@ -114,7 +117,7 @@ def validate(s, p=None, t=None):
             raise ValueError(f'{k}: must be in [0,1).')
     if not 0 < s.transfer_efficiency <= 1:
         raise ValueError('transfer_efficiency: must be in (0,1].')
-    for k in ('launch_reliability', 'delay_probability'):
+    for k in ('launch_reliability', 'delay_probability', 'storage_availability'):
         if getattr(s, k) > 1:
             raise ValueError(f'{k}: cannot exceed 1.')
     if not 30 <= s.horizon_days <= 1825 or s.horizon_days != int(s.horizon_days):
@@ -150,7 +153,8 @@ def samples(s):
     return {'event': rng.random((n, h)) < 1 - math.exp(-s.missions_per_year / 365.),
             'size': s.mean_demand_kg * logn(s.demand_cv, (n, h)),
             'slip': slip(), 'slip2': slip(), 'fail_u': rng.random((n, h)), 'fail_u2': rng.random((n, h)),
-            'init_u': rng.random(n), 'price': logn(s.launch_cv), 'loss': logn(s.loss_cv)}
+            'init_u': rng.random(n), 'price': logn(s.launch_cv), 'loss': logn(s.loss_cv),
+            'store_u': rng.random(n)}
 
 
 # ---------------------------------------------------------------- simulation
@@ -181,9 +185,10 @@ def simulate(s, p, rd=None):
         lead = prep + s.leo_rendezvous_days + slip + np.maximum(k - 1, 0) * s.tanker_cadence_days
         return ok, lead, qn * keep_act / keep_nom
 
+    avail = rd['store_u'] < s.storage_availability if not mto else np.zeros(n, dtype=bool)
     stock = np.zeros(n)
     if not mto and S > 0:
-        ok, _, net = order(np.full(n, S), np.ones(n, dtype=bool), rd['init_u'], 0., 0.)
+        ok, _, net = order(np.full(n, S), avail, rd['init_u'], 0., 0.)
         stock = np.where(ok, net, 0.)
     init_stock = stock.copy()
     arr = np.zeros((n, h + 1)); arr_nom = np.zeros((n, h + 1)); pipe = np.zeros(n)
@@ -210,7 +215,7 @@ def simulate(s, p, rd=None):
         dem += d; miss += ev; otif += full
         if not mto and t % review == 0:
             qnet = S - (stock + pipe)
-            mask = qnet >= s.min_order_fraction * cap
+            mask = (qnet >= s.min_order_fraction * cap) & avail
             ok, lead, net = order(qnet, mask, rd['fail_u'][:, t], s.rep_prep_days, rd['slip'][:, t])
             go = mask & ok
             idx = np.minimum(t + np.ceil(lead).astype(int), h)
@@ -227,7 +232,9 @@ def simulate(s, p, rd=None):
 
 def evaluate(s, p, rd=None, target=None):
     r = simulate(s, p, rd); n = len(r['cost']); z = 1.6448536269514722
-    fill = r['fill']; lb = float(fill.mean() - z * fill.std(ddof=1) / math.sqrt(n))
+    fill = r['fill']
+    boot = np.random.default_rng(12345).integers(0, n, (400, n))
+    lb = float(np.quantile(fill[boot].mean(axis=1), .05))   # percentile-bootstrap one-sided 95% lower bound
     p95 = float(np.quantile(r['cost'], .95)); ontime_kg = float(r['ontime'].mean())
     per = s_period(s, p)
     return {'policy': asdict(p), 'mean_cost': float(r['cost'].mean()), 'p95_cost': p95,
@@ -249,7 +256,7 @@ def s_period(s, p):
 # ---------------------------------------------------------------- search, frontier, sensitivity
 def candidates():
     out = [NetPolicy('MTO', 0., 1.)]
-    out += [NetPolicy(a, m, r) for a in ('MTS', 'MTS_MTO') for m in (.5, 1., 1.5, 2., 3., 4.) for r in (7., 14., 30., 60.)]
+    out += [NetPolicy(a, m, r) for a in ('MTS', 'MTS_MTO') for m in GRID_M for r in GRID_R]
     return out
 
 
@@ -272,6 +279,29 @@ def optimize(s, t):
     r = ok.iloc[0]; p = NetPolicy(r['arch'], float(r['stock_multiple']), float(r['review_days']))
     hs = replace(s, seed=(int(s.seed) + 104729) % 2 ** 32)
     return table, p, evaluate(hs, p)
+
+
+def at_grid_edge(p):
+    """True if the selected stock policy sits on the boundary of the searched grid (true optimum may lie beyond)."""
+    return p.arch != 'MTO' and (p.stock_multiple in (GRID_M[0], GRID_M[-1]) or p.review_days in (GRID_R[0], GRID_R[-1]))
+
+
+def breakeven(s, t, rates=(2., 6., 12., 24.), boils=(.0005, .002, .005)):
+    """Make-to-stock vs make-to-order at EQUAL service. The promise is set long enough that MTO is feasible,
+    so the comparison is driven by request rate and boil-off, not by an infeasible promise."""
+    promise = s.mto_prep_days + s.leo_rendezvous_days + s.max_extra_delay_days + 10.
+    rows = []
+    for rate in rates:
+        for b in boils:
+            ss = replace(s, missions_per_year=rate, storage_boil_daily=b, promised_days=promise, draws=min(int(s.draws), 300))
+            tb = best_by_arch(search(ss, t)); ok = tb.dropna(subset=['Mean cost USD'])
+            mto = tb[tb['Architecture'] == 'MTO']['Mean cost USD'].iloc[0]
+            stock = ok[ok['Architecture'] != 'MTO']['Mean cost USD'].min() if len(ok[ok['Architecture'] != 'MTO']) else np.nan
+            win = 'None feasible' if ok.empty else ok.sort_values('Mean cost USD').iloc[0]['Architecture']
+            rows.append({'Requests / year': rate, 'Storage boil / day': b, 'Promise days': promise, 'Winner': win,
+                         'MTO cost USD': mto, 'Best stock cost USD': stock,
+                         'Stock minus MTO USD': stock - mto if not (np.isnan(stock) or np.isnan(mto)) else np.nan})
+    return pd.DataFrame(rows)
 
 
 def best_by_arch(table):
@@ -309,6 +339,9 @@ def sensitivity(s, p):
             v = getattr(s, key) * f
             if key == 'storage_boil_daily': v = min(v, .95)
             cases.append((f'{title} × {f:g}', replace(s, **{key: v})))
+    for key, title in (('penalty_unserved_per_kg', 'Unserved penalty'), ('penalty_late_per_kg', 'Late penalty')):
+        for f in (.5, 2.):
+            cases.append((f'{title} × {f:g}', replace(s, **{key: getattr(s, key) * f})))
     for f in (.5, 2.):
         cases.append((f'Launch failure rate × {f:g}', replace(s, launch_reliability=max(0., 1 - (1 - s.launch_reliability) * f))))
     rows = []
@@ -406,17 +439,35 @@ class Tests(unittest.TestCase):
     def test_bad_import(self):
         with self.assertRaises(ValueError): import_json('{"model_id":"x"}')
 
-    def test_candidates(self): self.assertEqual(len(candidates()), 49)
+    def test_candidates(self): self.assertEqual(len(candidates()), 81)
 
     def test_optimizer(self):
         table, p, h = optimize(self.s, Target(.3)); self.assertIsNotNone(p); self.assertTrue(table.iloc[0]['Feasible'])
 
     def test_no_feasible(self): self.assertIsNone(optimize(self.s, Target(1.0))[1])
 
+    def test_storage_unavailable_removes_stock_benefit(self):
+        s = replace(self.s, storage_availability=0.)
+        r = simulate(s, self.mts); self.assertEqual(r['launches'].sum(), 0); self.assertEqual(r['fill'].max(), 0)
+        self.assertLess(simulate(s, self.hyb)['balance_error'], 1e-6)
+
+    def test_storage_availability_one_unchanged(self):
+        self.assertEqual(evaluate(self.s, self.mts)['mean_cost'], evaluate(replace(self.s, storage_availability=1.), self.mts)['mean_cost'])
+
+    def test_bootstrap_bound_below_mean(self):
+        e = evaluate(self.s, self.mts); self.assertLessEqual(e['fill_lb95'], e['fill_mean'] + 1e-12)
+
+    def test_grid_edge(self):
+        self.assertTrue(at_grid_edge(NetPolicy('MTS', GRID_M[-1], 14.))); self.assertFalse(at_grid_edge(NetPolicy('MTS', 2., 30.)))
+        self.assertFalse(at_grid_edge(NetPolicy('MTO', 0., 1.)))
+
+    def test_breakeven(self):
+        b = breakeven(replace(self.s, draws=100), Target(.5), (6.,), (.002,)); self.assertEqual(len(b), 1)
+
     def test_frontier(self):
         f = service_frontier(replace(self.s, draws=100), Target(.5), (30., 90.)); self.assertEqual(len(f), 2)
 
-    def test_sensitivity(self): self.assertEqual(len(sensitivity(replace(self.s, draws=100), self.hyb)), 13)
+    def test_sensitivity(self): self.assertEqual(len(sensitivity(replace(self.s, draws=100), self.hyb)), 17)
 
 
 def run_tests():
@@ -458,9 +509,9 @@ def main():
         groups = {'Demand and promise': ['missions_per_year', 'mean_demand_kg', 'demand_cv', 'promised_days', 'horizon_days'],
                   'Tanker and launch': ['tanker_capacity_kg', 'tanker_dry_kg', 'chemical_isp_s', 'tanker_leo_dv', 'leo_rendezvous_days', 'tanker_cadence_days', 'mto_prep_days', 'rep_prep_days', 'min_order_fraction'],
                   'Thermal': ['storage_boil_daily', 'transit_cargo_boil_daily', 'transfer_efficiency'],
-                  'Risk': ['launch_reliability', 'delay_probability', 'max_extra_delay_days', 'loss_cv', 'launch_cv', 'seed', 'draws'],
+                  'Risk': ['launch_reliability', 'storage_availability', 'delay_probability', 'max_extra_delay_days', 'loss_cv', 'launch_cv', 'seed', 'draws'],
                   'USD costs': ['launch_per_kg', 'tanker_launch_price_factor', 'tanker_service', 'propellant_per_kg', 'depot_service_per_year', 'depot_setup_allocation', 'penalty_unserved_per_kg', 'penalty_late_per_kg']}
-        frac = ('storage_boil_daily', 'transit_cargo_boil_daily', 'transfer_efficiency', 'launch_reliability', 'delay_probability', 'min_order_fraction')
+        frac = ('storage_boil_daily', 'transit_cargo_boil_daily', 'transfer_efficiency', 'launch_reliability', 'storage_availability', 'delay_probability', 'min_order_fraction')
         vals = {}
         for g, keys in groups.items():
             with st.expander(g, expanded=g == 'Demand and promise'):
@@ -474,7 +525,7 @@ def main():
     s = NetScenario(**vals)
     try: validate(s)
     except ValueError as exc: st.error(str(exc)); st.stop()
-    tab_opt, tab_front, tab_sens, tab_ver, tab_exp = st.tabs(['Policy optimization', 'Service-promise frontier', 'Sensitivity', 'Verification / provenance', 'Exports / limitations'])
+    tab_opt, tab_be, tab_front, tab_sens, tab_ver, tab_exp = st.tabs(['Policy optimization', 'Break-even (equal service)', 'Service-promise frontier', 'Sensitivity', 'Verification / provenance', 'Exports / limitations'])
     with tab_opt:
         target = Target(st.slider('Required on-time fill rate (lower 95% bound)', .5, 1., float(itarget.min_fill_rate), .01))
         st.caption(f'{len(candidates())} policies: MTO (dedicated tanker per request), MTS (base-stock, lost sales), MTS_MTO (base-stock + expedited launch for shortfall). Base stock in multiples of mean request; review period in days.')
@@ -487,6 +538,7 @@ def main():
             if best is None: st.error('No policy meets the service requirement under these assumptions. No recommendation issued.')
             else:
                 st.write('Selected policy:', asdict(best))
+                if at_grid_edge(best): st.warning('Selected policy lies on the edge of the searched grid; the true optimum may be beyond it. Widen GRID_M / GRID_R in the code before drawing conclusions.')
                 ok = hold['fill_lb95'] >= target.min_fill_rate
                 (st.success if ok else st.warning)('Passes the independent-seed service screen.' if ok else 'Does NOT establish the required service level on the independent seed.')
                 a, b, c, d = st.columns(4)
@@ -497,6 +549,15 @@ def main():
                 chart(px.histogram(pd.DataFrame({'On-time fill rate': hold['raw']['fill']}), x='On-time fill rate', nbins=30), 'Distribution of on-time fill rate across replications')
             st.dataframe(table, hide_index=True, use_container_width=True)
             st.download_button('Export search table', table.to_csv(index=False).encode(), file_name='policy_search.csv', mime='text/csv')
+    with tab_be:
+        st.write('Stock vs on-demand at **equal service**: the promise is set long enough that on-demand delivery is feasible, so the answer depends on request rate and boil-off, not on an infeasible promise.')
+        bt = Target(st.slider('Required fill rate', .5, 1., .9, .01, key='bt'))
+        if st.button('Compute break-even map'):
+            with st.spinner('Computing 12 cells...'): st.session_state['b6'] = ((s, bt), breakeven(s, bt))
+        bv = st.session_state.get('b6')
+        if bv and bv[0] == (s, bt):
+            st.dataframe(bv[1], hide_index=True, use_container_width=True)
+            chart(px.density_heatmap(bv[1], x='Storage boil / day', y='Requests / year', z='Stock minus MTO USD', histfunc='avg'), 'Stock cost minus on-demand cost (negative = stock cheaper)')
     with tab_front:
         st.write('Which architecture is cheapest at the required service level as the **promised delivery time** changes?')
         ft = Target(st.slider('Required fill rate for frontier', .5, 1., .9, .01, key='ft'))
